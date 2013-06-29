@@ -66,6 +66,8 @@ set(nepomuk_ui_SRCS
   ui/knfotranslator.cpp
   ui/metadatafilter.cpp
   ui/widgetfactory.cpp
+  ui/querybuilder.cpp
+  ui/querysyntaxhighlighter.cpp
 )
 
 set(nepomukutils_SRCS
@@ -106,6 +108,7 @@ install(FILES
   ui/tagwidget.h
   ui/filemetadatawidget.h
   ui/filemetadataconfigwidget.h
+  ui/querybuilder.h
   utils/resourcemodel.h
 
   DESTINATION ${INCLUDE_INSTALL_DIR}/nepomuk2 COMPONENT Devel

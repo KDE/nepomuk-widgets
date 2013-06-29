@@ -31,3 +31,8 @@ target_link_libraries(metadataconfigwidgetapp
   nepomukwidgets
   )
 
+kde4_add_executable(querybuilderapp TEST querybuilderapp.cpp)
+target_link_libraries(querybuilderapp
+  ${NEPOMUK_CORE_LIBRARY}
+  nepomukwidgets
+  )
