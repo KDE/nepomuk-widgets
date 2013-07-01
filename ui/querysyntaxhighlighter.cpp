@@ -70,55 +70,49 @@ void QuerySyntaxHighlighter::highlightTerm(const Nepomuk2::Query::Term &term)
         117, 81 , 26 , 0
     };
 
-    QList<Nepomuk2::Query::Term> sub_terms;
-    QTextCharFormat fmt;
-
     unsigned char *color = &colors[0] + (_color * 4);
-    bool change_color = false;
+    QTextCharFormat fmt = format(term.position());
 
     switch (term.type()) {
         case Nepomuk2::Query::Term::Comparison:
-            sub_terms.append(term.toComparisonTerm().subTerm());
-
-        case Nepomuk2::Query::Term::Literal:
-        case Nepomuk2::Query::Term::Resource:
-        case Nepomuk2::Query::Term::ResourceType:
             fmt.setForeground(QColor(color[0], color[1], color[2]));
 
-            if (term.type() != Nepomuk2::Query::Term::Comparison) {
-                fmt.setFontWeight(QFont::Bold);
+            // Underline nested queries
+            if (term.toComparisonTerm().subTerm().isAndTerm() ||
+                term.toComparisonTerm().subTerm().isOrTerm()) {
+                fmt.setFontUnderline(true);
             }
 
-            if (term.type() == Nepomuk2::Query::Term::ResourceType) {
-                fmt.setFontItalic(true);
-            }
+        case Query::Term::ResourceType:
+        case Query::Term::Literal:
+        case Query::Term::Resource:
+            fmt.setFontItalic(term.isComparisonTerm() || term.isResourceTypeTerm());
 
             setFormat(term.position(), term.length(), fmt);
+
+            if (term.isComparisonTerm()) {
+                _color = (_color + 1) & 7;
+                highlightTerm(term.toComparisonTerm().subTerm());
+            }
             break;
 
         case Nepomuk2::Query::Term::Negation:
-            sub_terms.append(term.toNegationTerm().subTerm());
+            highlightTerm(term.toNegationTerm().subTerm());
             break;
 
         case Nepomuk2::Query::Term::And:
-            sub_terms = term.toAndTerm().subTerms();
-            change_color = true;
+            Q_FOREACH(const Nepomuk2::Query::Term &t, term.toAndTerm().subTerms()) {
+                highlightTerm(t);
+            }
             break;
 
         case Nepomuk2::Query::Term::Or:
-            sub_terms = term.toOrTerm().subTerms();
-            change_color = true;
+            Q_FOREACH(const Nepomuk2::Query::Term &t, term.toOrTerm().subTerms()) {
+                highlightTerm(t);
+            }
             break;
 
         default:
             break;
-    }
-
-    Q_FOREACH(const Nepomuk2::Query::Term &term, sub_terms) {
-        if (change_color) {
-            _color = (_color + 1) & 7;
-        }
-
-        highlightTerm(term);
     }
 }
