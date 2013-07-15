@@ -18,57 +18,86 @@
 */
 
 #include "querybuilder.h"
-#include "querysyntaxhighlighter_p.h"
+#include "groupedlineedit.h"
 
-#include <QFont>
-#include <QFontMetrics>
-#include <QStyle>
-#include <QStyleOptionFrameV3>
-#include <QApplication>
-#include <QKeyEvent>
+#include <nepomuk2/queryparser.h>
+#include <nepomuk2/query.h>
+#include <nepomuk2/comparisonterm.h>
+#include <nepomuk2/negationterm.h>
+#include <nepomuk2/andterm.h>
+#include <nepomuk2/orterm.h>
+#include <nepomuk2/resourceterm.h>
+#include <nepomuk2/resourcetypeterm.h>
 
 using namespace Nepomuk2;
 
-QueryBuilder::QueryBuilder(Nepomuk2::Query::QueryParser *parser, QWidget *parent)
-: QPlainTextEdit(parent)
+struct QueryBuilder::Private
 {
-    new QuerySyntaxHighlighter(parser, document());
+    Query::QueryParser *parser;
+};
 
-    setWordWrapMode(QTextOption::NoWrap);
-    setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
-    setTabChangesFocus(true);
-    setFixedHeight(sizeHint().height());
+QueryBuilder::QueryBuilder(Query::QueryParser *parser, QWidget *parent)
+: GroupedLineEdit(parent),
+  d(new Private)
+{
+    d->parser = parser;
 
-    setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-    setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-
-    document()->setMaximumBlockCount(1);
+    connect(this, SIGNAL(textChanged()),
+            this, SLOT(reparse()));
 }
 
-QSize QueryBuilder::sizeHint() const
+void QueryBuilder::handleTerm(const Query::Term &term)
 {
-    QFontMetrics fm(font());
-    QStyleOptionFrameV3 opt;
-    QString text = document()->toPlainText();
+    QList<Query::Term> subterms;
+    bool block_for_each_term = false;
 
-    int h = qMax(fm.height(), 14) + 4;
-    int w = fm.width(text) + 4;
+    switch (term.type()) {
+    case Query::Term::Comparison:
+        subterms.append(term.toComparisonTerm().subTerm());
+        break;
 
-    opt.initFrom(this);
+    case Query::Term::Negation:
+        subterms.append(term.toNegationTerm().subTerm());
+        break;
 
-    return style()->sizeFromContents(
-        QStyle::CT_LineEdit,
-        &opt,
-        QSize(w, h).expandedTo(QApplication::globalStrut()),
-        this
-    );
-}
+    case Query::Term::And:
+        subterms = term.toAndTerm().subTerms();
+        block_for_each_term = true;
+        break;
 
-void QueryBuilder::keyPressEvent(QKeyEvent* e)
-{
-    if (e->key() == Qt::Key_Enter || e->key() == Qt::Key_Return) {
-        e->ignore();
-    } else {
-        QPlainTextEdit::keyPressEvent(e);
+    case Query::Term::Or:
+        subterms = term.toOrTerm().subTerms();
+        block_for_each_term = true;
+        break;
+
+    default:
+        break;
     }
+
+    Q_FOREACH(const Query::Term &term, subterms) {
+        if (block_for_each_term && (term.isComparisonTerm() || term.isResourceTypeTerm())) {
+            addBlock(term.position(), term.position() + term.length() - 1);
+        }
+
+        handleTerm(term);
+    }
+}
+
+void QueryBuilder::reparse()
+{
+    Query::Query query = d->parser->parse(text(), Query::QueryParser::DetectFilenamePattern);
+    Query::Term term(query.term());
+    int position = cursorPosition();
+
+    removeAllBlocks();
+
+    if (term.isAndTerm() || term.isOrTerm() || term.isNegationTerm()) {
+        handleTerm(term);
+    } else if (term.length() > 0) {
+        // There is only one term (comparison, literal, etc) in the query, create
+        // a block for it, handleTerm would not have done that
+        addBlock(term.position(), term.position() + term.length() - 1);
+    }
+
+    setCursorPosition(position);
 }

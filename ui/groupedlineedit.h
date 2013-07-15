@@ -17,30 +17,37 @@
    Boston, MA 02110-1301, USA.
 */
 
-#ifndef __QUERYEDITOR_H__
-#define __QUERYEDITOR_H__
+#ifndef __GROUPEDLINEEDIT_H__
+#define __GROUPEDLINEEDIT_H__
 
-#include "groupedlineedit.h"
+#include <QtGui/QScrollArea>
 
 namespace Nepomuk2 {
 
-namespace Query {
-    class QueryParser;
-    class Term;
-}
-
-class QueryBuilder : public GroupedLineEdit
+class GroupedLineEdit : public QScrollArea
 {
     Q_OBJECT
 
     public:
-        explicit QueryBuilder(Query::QueryParser *parser, QWidget *parent = 0);
+        explicit GroupedLineEdit(QWidget* parent = 0);
+        virtual ~GroupedLineEdit();
 
-    private:
-        void handleTerm(const Query::Term &term);
+        QString text() const;
+        int cursorPosition() const;
+
+        void setCursorPosition(int position);
+        void setText(const QString &text);
+        void removeAllBlocks();
+        void addBlock(int start, int end);
+
+        virtual QSize sizeHint() const;
 
     private slots:
-        void reparse();
+        void emitCursorPositionChanged(int position);
+
+    signals:
+        void textChanged();
+        void cursorPositionChanged(int position);
 
     private:
         struct Private;

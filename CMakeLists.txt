@@ -66,8 +66,10 @@ set(nepomuk_ui_SRCS
   ui/knfotranslator.cpp
   ui/metadatafilter.cpp
   ui/widgetfactory.cpp
+  ui/groupedlineedit.cpp
+  ui/groupedlineeditblock.cpp
+  ui/groupedlineeditedit.cpp
   ui/querybuilder.cpp
-  ui/querysyntaxhighlighter.cpp
 )
 
 set(nepomukutils_SRCS

@@ -17,31 +17,37 @@
    Boston, MA 02110-1301, USA.
 */
 
-#ifndef __QUERYSYNTAXHIGHLIGHTER_H__
-#define __QUERYSYNTAXHIGHLIGHTER_H__
+#ifndef __GROUPEDLINEEDITEDIT_H__
+#define __GROUPEDLINEEDITEDIT_H__
 
-#include <QSyntaxHighlighter>
+#include <QtGui/QLineEdit>
 
 namespace Nepomuk2 {
 
-namespace Query {
-    class QueryParser;
-    class Term;
-}
-
-class QuerySyntaxHighlighter : public QSyntaxHighlighter
+class GroupedLineEditEdit : public QLineEdit
 {
+    Q_OBJECT
+
     public:
-        QuerySyntaxHighlighter(Nepomuk2::Query::QueryParser *parser, QTextDocument *parent);
+        explicit GroupedLineEditEdit(int start_pos, const QString &content, QWidget *parent = 0);
 
-        virtual void highlightBlock(const QString &text);
+        virtual QSize sizeHint() const;
+        virtual QSize minimumSizeHint() const;
+
+    private slots:
+        void contentChanged();
+        void changeCursorPosition(int o, int n);
+
+    signals:
+        void cursorPositionChanged(int position);
+        void cursorBeforeStart();
+        void cursorAfterEnd();
+
+    protected:
+        virtual void keyPressEvent(QKeyEvent *e);
 
     private:
-        void highlightTerm(const Nepomuk2::Query::Term &term);
-
-    private:
-        Nepomuk2::Query::QueryParser *_parser;
-        int _color;
+        int start_pos;
 };
 
 }
