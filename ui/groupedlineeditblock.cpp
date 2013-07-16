@@ -20,11 +20,11 @@
 #include "groupedlineeditblock_p.h"
 #include "groupedlineeditedit_p.h"
 
-#include <QHBoxLayout>
-#include <QPushButton>
-#include <QColor>
-#include <QBrush>
-#include <QPainter>
+#include <QtGui/QHBoxLayout>
+#include <QtGui/QPushButton>
+#include <QtGui/QColor>
+#include <QtGui/QBrush>
+#include <QtGui/QPainter>
 
 using namespace Nepomuk2;
 
