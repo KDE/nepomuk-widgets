@@ -26,8 +26,6 @@
 #include <QBrush>
 #include <QPainter>
 
-#include <QtDebug>
-
 using namespace Nepomuk2;
 
 struct GroupedLineEditBlock::Private
