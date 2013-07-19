@@ -241,6 +241,10 @@ bool QueryBuilderCompleter::eventFilter(QObject *, QEvent *event)
             valueSelected();
             break;
 
+        case Qt::Key_Escape:
+            hide();
+            break;
+
         default:
             break;
         }
