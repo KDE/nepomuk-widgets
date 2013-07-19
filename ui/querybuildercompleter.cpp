@@ -217,23 +217,23 @@ void QueryBuilderCompleter::valueSelected()
 
 bool QueryBuilderCompleter::eventFilter(QObject *, QEvent *event)
 {
-    if (!isVisible() || currentWidget() == page_datetime) {
+    if (!isVisible()) {
         return false;       // Don't block events when the completer is not open
     }
 
     if (event->type() == QEvent::KeyPress) {
         QKeyEvent *keypress = static_cast<QKeyEvent *>(event);
-        QListWidget *list = static_cast<QListWidget *>(currentWidget());    // The event is never filtered when the date-time page is opened
+        QListWidget *list = qobject_cast<QListWidget *>(currentWidget());    // The event is never filtered when the date-time page is opened
 
         switch (keypress->key()) {
         case Qt::Key_Up:
-            if (list->currentRow() > 0) {
+            if (list && list->currentRow() > 0) {
                 list->setCurrentRow(list->currentRow() - 1);
             }
             break;
 
         case Qt::Key_Down:
-            if (list->currentRow() < list->count() - 1) {
+            if (list && list->currentRow() < list->count() - 1) {
                 list->setCurrentRow(list->currentRow() + 1);
             }
             break;
