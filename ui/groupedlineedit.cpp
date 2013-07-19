@@ -127,6 +127,10 @@ void GroupedLineEdit::emitCursorPositionChanged(int position)
 {
     d->cursor_position = position;
 
+    if (focusWidget()) {
+        ensureWidgetVisible(focusWidget(), 0, 0);
+    }
+
     emit cursorPositionChanged(position);
 }
 
