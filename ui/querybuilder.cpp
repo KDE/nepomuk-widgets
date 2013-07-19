@@ -153,6 +153,7 @@ void QueryBuilder::autoComplete(Query::CompletionProposal *proposal, const QStri
 {
     // Build the text that will be used to auto-complete the query
     QString replacement;
+    int cursor_position = -1;
 
     Q_FOREACH(const QString &part, proposal->pattern()) {
         if (!replacement.isEmpty()) {
@@ -160,6 +161,10 @@ void QueryBuilder::autoComplete(Query::CompletionProposal *proposal, const QStri
         }
 
         if (part.at(0) == QLatin1Char('%')) {
+            if (cursor_position == -1) {
+                cursor_position = replacement.length() + placeholder_content.length();
+            }
+
             replacement += placeholder_content;
         } else {
             // FIXME: This arbitrarily selects a term even if it does not fit
@@ -172,7 +177,8 @@ void QueryBuilder::autoComplete(Query::CompletionProposal *proposal, const QStri
     t.replace(proposal->startPosition(), proposal->endPosition() - proposal->startPosition() + 1, replacement);
     setText(t);
 
-    setCursorPosition(proposal->startPosition() + replacement.length());
+    setCursorPosition(proposal->startPosition() +
+        (cursor_position >= 0 ? cursor_position : replacement.length()));
     reparse();
 }
 
