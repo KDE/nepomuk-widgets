@@ -70,6 +70,7 @@ set(nepomuk_ui_SRCS
   ui/groupedlineeditblock.cpp
   ui/groupedlineeditedit.cpp
   ui/querybuilder.cpp
+  ui/querybuildercompleter.cpp
 )
 
 set(nepomukutils_SRCS

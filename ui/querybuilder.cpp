@@ -19,7 +19,9 @@
 
 #include "querybuilder.h"
 #include "groupedlineedit.h"
+#include "querybuildercompleter_p.h"
 
+#include <nepomuk2/completionproposal.h>
 #include <nepomuk2/queryparser.h>
 #include <nepomuk2/query.h>
 #include <nepomuk2/comparisonterm.h>
@@ -34,6 +36,7 @@ using namespace Nepomuk2;
 struct QueryBuilder::Private
 {
     Query::QueryParser *parser;
+    QueryBuilderCompleter *completer;
 };
 
 QueryBuilder::QueryBuilder(Query::QueryParser *parser, QWidget *parent)
@@ -41,9 +44,12 @@ QueryBuilder::QueryBuilder(Query::QueryParser *parser, QWidget *parent)
   d(new Private)
 {
     d->parser = parser;
+    d->completer = new QueryBuilderCompleter(this);
 
     connect(this, SIGNAL(textChanged()),
             this, SLOT(reparse()));
+    connect(d->completer, SIGNAL(proposalSelected(Nepomuk2::Query::CompletionProposal*,QString)),
+            this, SLOT(autoComplete(Nepomuk2::Query::CompletionProposal*,QString)));
 }
 
 void QueryBuilder::handleTerm(const Query::Term &term)
@@ -85,10 +91,11 @@ void QueryBuilder::handleTerm(const Query::Term &term)
 
 void QueryBuilder::reparse()
 {
-    Query::Query query = d->parser->parse(text(), Query::QueryParser::DetectFilenamePattern);
-    Query::Term term(query.term());
     int position = cursorPosition();
+    Query::Query query = d->parser->parse(text(), Query::QueryParser::DetectFilenamePattern, position);
+    Query::Term term(query.term());
 
+    // Highlight the input field
     removeAllBlocks();
 
     if (term.isAndTerm() || term.isOrTerm() || term.isNegationTerm()) {
@@ -100,4 +107,73 @@ void QueryBuilder::reparse()
     }
 
     setCursorPosition(position);
+
+    // Build the list of auto-completions
+    QList<Query::CompletionProposal *> proposals = d->parser->completionProposals();
+
+    if (proposals.count() == 1) {
+        // Only one proposal, the query is unambiguous, show a list of auto-completions
+        switch (proposals.at(0)->type()) {
+        case Query::CompletionProposal::Tag:
+            d->completer->setMode(QueryBuilderCompleter::Tags);
+
+            Q_FOREACH(const QString &tag, d->parser->allTags()) {
+                d->completer->addTag(tag);
+            }
+            break;
+
+        case Query::CompletionProposal::DateTime:
+            d->completer->setMode(QueryBuilderCompleter::DateTime);
+            break;
+
+        default:
+            // TODO: Handle contacts (Nepomuk or Akonadi contacts)
+            d->completer->setMode(QueryBuilderCompleter::Proposals);
+            break;
+        }
+
+        d->completer->addProposal(proposals.at(0));
+        d->completer->open();
+    } else if (proposals.count() > 1) {
+        // More than one proposal, the user needs to clarify its input
+        d->completer->setMode(QueryBuilderCompleter::Proposals);
+
+        Q_FOREACH(Query::CompletionProposal *proposal, d->parser->completionProposals()) {
+            d->completer->addProposal(proposal);
+        }
+
+        d->completer->open();
+    } else {
+        // No completion available
+        d->completer->hide();
+    }
 }
+
+void QueryBuilder::autoComplete(Query::CompletionProposal *proposal, const QString &placeholder_content)
+{
+    // Build the text that will be used to auto-complete the query
+    QString replacement;
+
+    Q_FOREACH(const QString &part, proposal->pattern()) {
+        if (!replacement.isEmpty()) {
+            replacement += QLatin1Char(' ');
+        }
+
+        if (part.at(0) == QLatin1Char('%')) {
+            replacement += placeholder_content;
+        } else {
+            // FIXME: This arbitrarily selects a term even if it does not fit
+            //        what the user entered.
+            replacement += part.section(QLatin1Char('|'), 0, 0);
+        }
+    }
+
+    QString t = text();
+    t.replace(proposal->startPosition(), proposal->endPosition() - proposal->startPosition() + 1, replacement);
+    setText(t);
+
+    setCursorPosition(proposal->startPosition() + replacement.length());
+    reparse();
+}
+
+#include "querybuilder.moc"

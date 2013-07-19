@@ -82,10 +82,21 @@ QSize GroupedLineEditEdit::minimumSizeHint() const
 
 void GroupedLineEditEdit::keyPressEvent(QKeyEvent *e)
 {
-    if (cursorPosition() == 0 && e->key() == Qt::Key_Left) {
-        emit cursorBeforeStart();
-    } else if (cursorPosition() == text().length() && e->key() == Qt::Key_Right) {
-        emit cursorAfterEnd();
+    switch (e->key()) {
+    case Qt::Key_Left:
+        if (cursorPosition() == 0) {
+            emit cursorBeforeStart();
+        }
+        break;
+
+    case Qt::Key_Right:
+        if (cursorPosition() == text().length()) {
+            emit cursorAfterEnd();
+        }
+        break;
+
+    default:
+        break;
     }
 
     QLineEdit::keyPressEvent(e);

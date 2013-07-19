@@ -25,6 +25,7 @@
 namespace Nepomuk2 {
 
 namespace Query {
+    class CompletionProposal;
     class QueryParser;
     class Term;
 }
@@ -41,6 +42,7 @@ class QueryBuilder : public GroupedLineEdit
 
     private slots:
         void reparse();
+        void autoComplete(Nepomuk2::Query::CompletionProposal *proposal, const QString &placeholder_content);
 
     private:
         struct Private;
