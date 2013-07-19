@@ -100,7 +100,7 @@ void QueryBuilder::reparse()
 
     if (term.isAndTerm() || term.isOrTerm() || term.isNegationTerm()) {
         handleTerm(term);
-    } else if (term.length() > 0) {
+    } else if (term.isComparisonTerm() || term.isResourceTypeTerm()) {
         // There is only one term (comparison, literal, etc) in the query, create
         // a block for it, handleTerm would not have done that
         addBlock(term.position(), term.position() + term.length() - 1);
