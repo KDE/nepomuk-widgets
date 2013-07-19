@@ -51,6 +51,9 @@ QueryBuilderCompleter::QueryBuilderCompleter(QWidget *parent)
     page_tags->setFrameShape(QFrame::NoFrame);
     page_contacts->setFrameShape(QFrame::NoFrame);
 
+    page_datetime->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Ignored);
+    page_datetime->setFirstDayOfWeek(QLocale::system().firstDayOfWeek());
+
     // Add them in the stack
     addWidget(page_proposals);
     addWidget(page_tags);
