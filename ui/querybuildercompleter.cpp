@@ -38,7 +38,7 @@ QueryBuilderCompleter::QueryBuilderCompleter(QWidget *parent)
   page_datetime(new QCalendarWidget(this))
 {
     // Display the completer in its own non-decorated popup
-    setWindowFlags(Qt::Window | Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint);
+    setWindowFlags(Qt::Tool | Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint);
     setAttribute(Qt::WA_X11NetWmWindowTypeCombo);
     setAttribute(Qt::WA_ShowWithoutActivating);
     setAttribute(Qt::WA_WindowPropagation);
