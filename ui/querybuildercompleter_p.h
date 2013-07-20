@@ -46,8 +46,8 @@ class QueryBuilderCompleter : public QStackedWidget
         void setMode(Mode mode);
 
         void addProposal(Nepomuk2::Query::CompletionProposal *proposal);
-        void addTag(const QString &tag);
-        void addContact(const QString &contact);
+        void setTags(const QStringList &tags);
+        void setContacts(const QStringList &contacts);
 
     public slots:
         void open();

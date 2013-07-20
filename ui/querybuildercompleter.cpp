@@ -164,14 +164,22 @@ void QueryBuilderCompleter::addProposal(Nepomuk2::Query::CompletionProposal *pro
     page_proposals->setItemWidget(item, widget);
 }
 
-void QueryBuilderCompleter::addTag(const QString &tag)
+void QueryBuilderCompleter::setTags(const QStringList &tags)
 {
-    page_tags->addItem(tag);
+    Q_FOREACH(const QString &tag, tags) {
+        page_tags->addItem(tag);
+    }
+
+    page_tags->sortItems(Qt::AscendingOrder);
 }
 
-void QueryBuilderCompleter::addContact(const QString &contact)
+void QueryBuilderCompleter::setContacts(const QStringList &contacts)
 {
-    page_contacts->addItem(contact);
+    Q_FOREACH(const QString &contact, contacts) {
+        page_contacts->addItem(contact);
+    }
+
+    page_contacts->sortItems(Qt::AscendingOrder);
 }
 
 void QueryBuilderCompleter::open()

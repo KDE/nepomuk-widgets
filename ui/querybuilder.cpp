@@ -116,10 +116,12 @@ void QueryBuilder::reparse()
         switch (proposals.at(0)->type()) {
         case Query::CompletionProposal::Tag:
             d->completer->setMode(QueryBuilderCompleter::Tags);
+            d->completer->setTags(d->parser->allTags());
+            break;
 
-            Q_FOREACH(const QString &tag, d->parser->allTags()) {
-                d->completer->addTag(tag);
-            }
+        case Query::CompletionProposal::Contact:
+            d->completer->setMode(QueryBuilderCompleter::Contacts);
+            d->completer->setContacts(d->parser->allContacts());
             break;
 
         case Query::CompletionProposal::DateTime:
@@ -161,14 +163,13 @@ void QueryBuilder::autoComplete(Query::CompletionProposal *proposal, const QStri
         }
 
         if (part.at(0) == QLatin1Char('%')) {
-            if (cursor_position == -1) {
-                cursor_position = replacement.length() + placeholder_content.length();
-            }
+            cursor_position = replacement.length() + placeholder_content.length();
 
             if (placeholder_content.isEmpty()) {
                 replacement += QLatin1Char(' ');
             } else if (placeholder_content.contains(QLatin1Char(' '))) {
                 replacement += QLatin1Char('"') + placeholder_content + QLatin1Char('"');
+                cursor_position += 2;   // Skip the quotes
             } else {
                 replacement += placeholder_content;
             }
