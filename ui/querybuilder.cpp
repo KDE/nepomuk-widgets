@@ -165,7 +165,7 @@ void QueryBuilder::autoComplete(Query::CompletionProposal *proposal, const QStri
                 cursor_position = replacement.length() + placeholder_content.length();
             }
 
-            replacement += placeholder_content;
+            replacement += placeholder_content.isEmpty() ? QLatin1String(" ") : placeholder_content;
         } else {
             // FIXME: This arbitrarily selects a term even if it does not fit
             //        what the user entered.
@@ -174,10 +174,10 @@ void QueryBuilder::autoComplete(Query::CompletionProposal *proposal, const QStri
     }
 
     QString t = text();
-    t.replace(proposal->startPosition(), proposal->endPosition() - proposal->startPosition() + 1, replacement);
+    t.replace(proposal->position(), proposal->length(), replacement);
     setText(t);
 
-    setCursorPosition(proposal->startPosition() +
+    setCursorPosition(proposal->position() +
         (cursor_position >= 0 ? cursor_position : replacement.length()));
     reparse();
 }
