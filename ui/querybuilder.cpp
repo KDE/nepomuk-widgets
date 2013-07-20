@@ -165,7 +165,13 @@ void QueryBuilder::autoComplete(Query::CompletionProposal *proposal, const QStri
                 cursor_position = replacement.length() + placeholder_content.length();
             }
 
-            replacement += placeholder_content.isEmpty() ? QLatin1String(" ") : placeholder_content;
+            if (placeholder_content.isEmpty()) {
+                replacement += QLatin1Char(' ');
+            } else if (placeholder_content.contains(QLatin1Char(' '))) {
+                replacement += QLatin1Char('"') + placeholder_content + QLatin1Char('"');
+            } else {
+                replacement += placeholder_content;
+            }
         } else {
             // FIXME: This arbitrarily selects a term even if it does not fit
             //        what the user entered.
