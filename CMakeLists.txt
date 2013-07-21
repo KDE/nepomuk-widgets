@@ -67,8 +67,6 @@ set(nepomuk_ui_SRCS
   ui/metadatafilter.cpp
   ui/widgetfactory.cpp
   ui/groupedlineedit.cpp
-  ui/groupedlineeditblock.cpp
-  ui/groupedlineeditedit.cpp
   ui/querybuilder.cpp
   ui/querybuildercompleter.cpp
 )

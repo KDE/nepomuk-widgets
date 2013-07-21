@@ -18,46 +18,55 @@
 */
 
 #include "groupedlineedit.h"
-#include "groupedlineeditblock_p.h"
 
 #include <QtGui/QStyleOptionFrameV3>
-#include <QtGui/QHBoxLayout>
+#include <QtGui/QFontMetrics>
+#include <QtGui/QApplication>
+#include <QtGui/QScrollBar>
+#include <QtGui/QTextDocument>
+#include <QtGui/QTextBlock>
+#include <QtGui/QTextLayout>
+#include <QtGui/QTextLine>
+#include <QtGui/QPainter>
+#include <QtGui/QPainterPath>
+#include <QtGui/QBrush>
+#include <QtGui/QColor>
+#include <QtGui/QPalette>
+
+#include <QtDebug>
 
 using namespace Nepomuk2;
 
 struct GroupedLineEdit::Private
 {
-    QHBoxLayout *layout;
-    GroupedLineEditBlock *main_block;
+    struct Block {
+        int start;
+        int end;
+    };
 
-    int cursor_position;
+    QVector<Block> blocks;
+    QBrush base;
 };
 
 GroupedLineEdit::GroupedLineEdit(QWidget* parent)
-: QScrollArea(parent),
+: QPlainTextEdit(parent),
   d(new Private)
 {
-    // Make the query builder look like a line edit
+    setWordWrapMode(QTextOption::NoWrap);
+    setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+
     setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 
-    QWidget *widget = new QWidget(this);
+    document()->setMaximumBlockCount(1);
 
-    widget->setBackgroundRole(QPalette::Base);
+    // Use a transparent base, to make the rectangle visible
+    QPalette pal = palette();
 
-    setWidget(widget);
-    setWidgetResizable(true);
-    setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+    d->base = pal.base();
+    pal.setBrush(QPalette::Base, Qt::transparent);
 
-    // Create the main block
-    d->main_block = NULL;
-    d->cursor_position = 0;
-
-    d->layout = new QHBoxLayout(widget);
-    d->layout->setContentsMargins(2, 2, 2, 2);
-    d->layout->addStretch();
-
-    removeAllBlocks();
+    setPalette(pal);
 }
 
 GroupedLineEdit::~GroupedLineEdit()
@@ -67,73 +76,122 @@ GroupedLineEdit::~GroupedLineEdit()
 
 QString GroupedLineEdit::text() const
 {
-    if (d->main_block) {
-        return d->main_block->text();
-    } else {
-        return QString();
-    }
+    // Remove the block crosses from the text
+    return toPlainText().remove(" ×");
 }
 
 int GroupedLineEdit::cursorPosition() const
 {
-    return d->cursor_position;
+    return textCursor().positionInBlock();
 }
 
 void GroupedLineEdit::addBlock(int start, int end)
 {
-    if (d->main_block) {
-        d->main_block->addBlock(start, end);
-    }
+    Private::Block block;
+
+    block.start = start;
+    block.end = end;
+
+    d->blocks.append(block);
+    viewport()->update();
 }
 
 void GroupedLineEdit::setCursorPosition(int position)
 {
-    if (d->main_block) {
-        d->main_block->setCursorPosition(position);
-    }
+    QTextCursor c = textCursor();
+
+    c.setPosition(position, QTextCursor::MoveAnchor);
 }
 
-void GroupedLineEdit::setText(const QString& text)
+void GroupedLineEdit::setText(const QString &text)
 {
-    // Re-create the main block
-    if (d->main_block) {
-        delete d->main_block;
-    }
-
-    d->main_block = new GroupedLineEditBlock(0, text, QColor(), false, widget());
-    d->layout->insertWidget(0, d->main_block);
-
-    connect(d->main_block, SIGNAL(textChanged()),
-            this, SIGNAL(textChanged()), Qt::QueuedConnection);
-    connect(d->main_block, SIGNAL(editingFinished()),
-            this, SIGNAL(editingFinished()));
-    connect(d->main_block, SIGNAL(cursorPositionChanged(int)),
-            this, SLOT(emitCursorPositionChanged(int)));
+    setPlainText(text);
+    removeAllBlocks();
 }
 
 void GroupedLineEdit::removeAllBlocks()
 {
-    setText(text());
+    d->blocks.clear();
+    viewport()->update();
 }
 
 QSize GroupedLineEdit::sizeHint() const
 {
-    QSize hint(widget()->sizeHint());
+    QFontMetrics fm(font());
+    QStyleOptionFrameV3 opt;
+    QString text = document()->toPlainText();
 
-    hint.setHeight(hint.height() + 8);
+    int h = qMax(fm.height(), 14) + 4;
+    int w = fm.width(text) + 4;
 
-    return hint;
+    opt.initFrom(this);
+
+    return style()->sizeFromContents(
+        QStyle::CT_LineEdit,
+        &opt,
+        QSize(w, h).expandedTo(QApplication::globalStrut()),
+       this
+    );
 }
 
-void GroupedLineEdit::emitCursorPositionChanged(int position)
+void GroupedLineEdit::keyPressEvent(QKeyEvent *e)
 {
-    d->cursor_position = position;
-
-    if (focusWidget()) {
-        ensureWidgetVisible(focusWidget(), 0, 0);
+    switch (e->key()) {
+    case Qt::Key_Return:
+    case Qt::Key_Enter:
+        emit editingFinished();
+        return;
     }
 
-    emit cursorPositionChanged(position);
+    QPlainTextEdit::keyPressEvent(e);
 }
+
+void GroupedLineEdit::paintEvent(QPaintEvent *e)
+{
+    static unsigned char colors[] = {
+        0  , 87 , 174,
+        243, 195, 0  ,
+        0  , 179, 119,
+        235, 115, 49 ,
+        139, 179, 0  ,
+        85 , 87 , 83 ,
+        0  , 140, 0  ,
+        117, 81 , 26
+    };
+
+    QTextLine line = document()->findBlock(0).layout()->lineAt(0);
+    QPainter painter(viewport());
+    int color_index = 0;
+
+    painter.setRenderHint(QPainter::Antialiasing, true);
+    painter.setRenderHint(QPainter::HighQualityAntialiasing, true);
+
+    painter.fillRect(0, 0, viewport()->width(), viewport()->height(), d->base);
+
+    Q_FOREACH(const Private::Block &block, d->blocks) {
+        qreal start_x = line.cursorToX(block.start, QTextLine::Trailing);
+        qreal end_x = line.cursorToX(block.end + 1, QTextLine::Leading);
+        QPainterPath path;
+        QRectF rectangle(
+            start_x - 1.0 - double(horizontalScrollBar()->value()),
+            0.0,
+            end_x - start_x + 2.0,
+            double(viewport()->height() - 1)
+        );
+
+        unsigned char *c = colors + (color_index * 3);
+        QColor color(c[0], c[1], c[2]);
+
+        path.addRoundedRect(rectangle, 5.0, 5.0);
+        painter.setPen(color);
+        painter.setBrush(color.lighter(180));
+        painter.drawPath(path);
+
+        color_index = (color_index + 1) & 0xf;
+    }
+
+    QPlainTextEdit::paintEvent(e);
+}
+
 
 #include "groupedlineedit.moc"

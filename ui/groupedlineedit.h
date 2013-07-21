@@ -20,16 +20,16 @@
 #ifndef __GROUPEDLINEEDIT_H__
 #define __GROUPEDLINEEDIT_H__
 
-#include <QtGui/QScrollArea>
+#include <QtGui/QPlainTextEdit>
 
 namespace Nepomuk2 {
 
-class GroupedLineEdit : public QScrollArea
+class GroupedLineEdit : public QPlainTextEdit
 {
     Q_OBJECT
 
     public:
-        explicit GroupedLineEdit(QWidget* parent = 0);
+        explicit GroupedLineEdit(QWidget *parent = 0);
         virtual ~GroupedLineEdit();
 
         QString text() const;
@@ -37,18 +37,18 @@ class GroupedLineEdit : public QScrollArea
 
         void setCursorPosition(int position);
         void setText(const QString &text);
+
         void removeAllBlocks();
         void addBlock(int start, int end);
 
         virtual QSize sizeHint() const;
 
-    private slots:
-        void emitCursorPositionChanged(int position);
-
     signals:
-        void textChanged();
-        void cursorPositionChanged(int position);
         void editingFinished();
+
+    protected:
+        virtual void paintEvent(QPaintEvent *e);
+        virtual void keyPressEvent(QKeyEvent *e);
 
     private:
         struct Private;
