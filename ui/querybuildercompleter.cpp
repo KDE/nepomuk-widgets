@@ -33,8 +33,7 @@
 QueryBuilderCompleter::QueryBuilderCompleter(QWidget *parent)
 : QStackedWidget(parent),
   page_proposals(new QListWidget(this)),
-  page_tags(new QListWidget(this)),
-  page_contacts(new QListWidget(this)),
+  page_strings(new QListWidget(this)),
   page_datetime(new QCalendarWidget(this))
 {
     // Display the completer in its own non-decorated popup
@@ -48,25 +47,21 @@ QueryBuilderCompleter::QueryBuilderCompleter(QWidget *parent)
 
     // Configure the pages
     page_proposals->setFrameShape(QFrame::NoFrame);
-    page_tags->setFrameShape(QFrame::NoFrame);
-    page_contacts->setFrameShape(QFrame::NoFrame);
+    page_strings->setFrameShape(QFrame::NoFrame);
 
     page_datetime->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Ignored);
     page_datetime->setFirstDayOfWeek(QLocale::system().firstDayOfWeek());
 
     // Add them in the stack
     addWidget(page_proposals);
-    addWidget(page_tags);
-    addWidget(page_contacts);
+    addWidget(page_strings);
     addWidget(page_datetime);
 
     parent->installEventFilter(this);
 
     connect(page_proposals, SIGNAL(itemActivated(QListWidgetItem*)),
             this, SLOT(valueSelected()));
-    connect(page_tags, SIGNAL(itemActivated(QListWidgetItem*)),
-            this, SLOT(valueSelected()));
-    connect(page_contacts, SIGNAL(itemActivated(QListWidgetItem*)),
+    connect(page_strings, SIGNAL(itemActivated(QListWidgetItem*)),
             this, SLOT(valueSelected()));
     connect(page_datetime, SIGNAL(activated(QDate)),
             this, SLOT(valueSelected()));
@@ -81,14 +76,9 @@ void QueryBuilderCompleter::setMode(Mode mode)
         setCurrentWidget(page_proposals);
         break;
 
-    case Tags:
-        setCurrentWidget(page_tags);
-        page_tags->clear();
-        break;
-
-    case Contacts:
-        setCurrentWidget(page_contacts);
-        page_contacts->clear();
+    case Strings:
+        setCurrentWidget(page_strings);
+        page_strings->clear();
         break;
 
     case DateTime:
@@ -162,24 +152,27 @@ void QueryBuilderCompleter::addProposal(Nepomuk2::Query::CompletionProposal *pro
 
     page_proposals->addItem(item);
     page_proposals->setItemWidget(item, widget);
+    page_proposals->setCurrentRow(0);
 }
 
-void QueryBuilderCompleter::setTags(const QStringList &tags)
+void QueryBuilderCompleter::setStrings(const QStringList &strings, const QString &preselect_prefix)
 {
-    Q_FOREACH(const QString &tag, tags) {
-        page_tags->addItem(tag);
+    Q_FOREACH(const QString &s, strings) {
+        page_strings->addItem(s);
     }
 
-    page_tags->sortItems(Qt::AscendingOrder);
-}
+    page_strings->sortItems(Qt::AscendingOrder);
 
-void QueryBuilderCompleter::setContacts(const QStringList &contacts)
-{
-    Q_FOREACH(const QString &contact, contacts) {
-        page_contacts->addItem(contact);
+    // Preselect the first prefix that is just after preselect_prefix in the
+    // alphabetic order
+    page_strings->setCurrentRow(0);
+
+    for (int i=0; i<page_strings->count(); ++i) {
+        if (page_strings->item(i)->text().toLower() > preselect_prefix.toLower()) {
+            page_strings->setCurrentRow(i);
+            break;
+        }
     }
-
-    page_contacts->sortItems(Qt::AscendingOrder);
 }
 
 void QueryBuilderCompleter::open()
@@ -195,10 +188,6 @@ void QueryBuilderCompleter::open()
     resize(p->width(), sizeHint().height());
     move(parent_position.x(), parent_position.y() + p->height());
 
-    page_proposals->setCurrentRow(0);
-    page_tags->setCurrentRow(0);
-    page_contacts->setCurrentRow(0);
-
     show();
 }
 
@@ -211,10 +200,8 @@ void QueryBuilderCompleter::valueSelected()
 
     QString placeholder_content;
 
-    if (currentWidget() == page_tags) {
-        placeholder_content = page_tags->currentItem()->text();
-    } else if (currentWidget() == page_contacts) {
-        placeholder_content = page_contacts->currentItem()->text();
+    if (currentWidget() == page_strings) {
+        placeholder_content = page_strings->currentItem()->text();
     } else if (currentWidget() == page_datetime) {
         placeholder_content = page_datetime->selectedDate().toString(QLatin1String("yyyy-MM-dd"));
     }

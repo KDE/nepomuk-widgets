@@ -92,8 +92,17 @@ void QueryBuilder::handleTerm(const Query::Term &term)
 void QueryBuilder::reparse()
 {
     int position = cursorPosition();
-    Query::Query query = d->parser->parse(text(), Query::QueryParser::DetectFilenamePattern, position);
+    QString t = text();
+
+    Query::Query query = d->parser->parse(t, Query::QueryParser::DetectFilenamePattern, position);
     Query::Term term(query.term());
+
+    // Extract the term just before the cursor
+    QString term_before_cursor;
+
+    for (int i=position-1; i>=0 && !t.at(i).isSpace(); --i) {
+        term_before_cursor.prepend(t.at(i));
+    }
 
     // Highlight the input field
     removeAllBlocks();
@@ -115,13 +124,13 @@ void QueryBuilder::reparse()
         // Only one proposal, the query is unambiguous, show a list of auto-completions
         switch (proposals.at(0)->type()) {
         case Query::CompletionProposal::Tag:
-            d->completer->setMode(QueryBuilderCompleter::Tags);
-            d->completer->setTags(d->parser->allTags());
+            d->completer->setMode(QueryBuilderCompleter::Strings);
+            d->completer->setStrings(d->parser->allTags(), term_before_cursor);
             break;
 
         case Query::CompletionProposal::Contact:
-            d->completer->setMode(QueryBuilderCompleter::Contacts);
-            d->completer->setContacts(d->parser->allContacts());
+            d->completer->setMode(QueryBuilderCompleter::Strings);
+            d->completer->setStrings(d->parser->allContacts(), term_before_cursor);
             break;
 
         case Query::CompletionProposal::DateTime:
@@ -129,7 +138,6 @@ void QueryBuilder::reparse()
             break;
 
         default:
-            // TODO: Handle contacts (Nepomuk or Akonadi contacts)
             d->completer->setMode(QueryBuilderCompleter::Proposals);
             break;
         }

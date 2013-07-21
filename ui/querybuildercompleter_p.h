@@ -36,8 +36,7 @@ class QueryBuilderCompleter : public QStackedWidget
     public:
         enum Mode {
             Proposals,
-            Tags,
-            Contacts,
+            Strings,
             DateTime,
         };
 
@@ -46,8 +45,7 @@ class QueryBuilderCompleter : public QStackedWidget
         void setMode(Mode mode);
 
         void addProposal(Nepomuk2::Query::CompletionProposal *proposal);
-        void setTags(const QStringList &tags);
-        void setContacts(const QStringList &contacts);
+        void setStrings(const QStringList &strings, const QString &preselect_prefix);
 
     public slots:
         void open();
@@ -64,8 +62,7 @@ class QueryBuilderCompleter : public QStackedWidget
 
     private:
         QListWidget *page_proposals;
-        QListWidget *page_tags;
-        QListWidget *page_contacts;
+        QListWidget *page_strings;
         QCalendarWidget *page_datetime;
 };
 
