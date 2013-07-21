@@ -234,6 +234,8 @@ void GroupedLineEditBlock::Private::addLineEdit(int offset, const QString &conte
                      block, SLOT(nestedCursorAfterEnd()));
     QObject::connect(edit, SIGNAL(cursorPositionChanged(int)),
                      block, SIGNAL(cursorPositionChanged(int)));
+    QObject::connect(edit, SIGNAL(editingFinished()),
+                     block, SIGNAL(editingFinished()));
 }
 
 void GroupedLineEditBlock::Private::addBlock(int offset, const QString &content, int index)
@@ -272,6 +274,8 @@ void GroupedLineEditBlock::Private::addBlock(int offset, const QString &content,
                      block, SLOT(nestedCursorAfterEnd()));
     QObject::connect(b, SIGNAL(cursorPositionChanged(int)),
                      block, SIGNAL(cursorPositionChanged(int)));
+    QObject::connect(b, SIGNAL(editingFinished()),
+                     block, SIGNAL(editingFinished()));
 }
 
 void GroupedLineEditBlock::Private::setWidgetCursorPosition(QWidget *widget, int widget_start, int position)

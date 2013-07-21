@@ -69,6 +69,8 @@ class GroupedLineEditBlock : public QWidget
     signals:
         void cursorPositionChanged(int position);
         void textChanged();
+        void editingFinished();
+
         void cursorBeforeStart();
         void cursorAfterEnd();
         void closed();

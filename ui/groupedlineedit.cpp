@@ -105,6 +105,8 @@ void GroupedLineEdit::setText(const QString& text)
 
     connect(d->main_block, SIGNAL(textChanged()),
             this, SIGNAL(textChanged()), Qt::QueuedConnection);
+    connect(d->main_block, SIGNAL(editingFinished()),
+            this, SIGNAL(editingFinished()));
     connect(d->main_block, SIGNAL(cursorPositionChanged(int)),
             this, SLOT(emitCursorPositionChanged(int)));
 }

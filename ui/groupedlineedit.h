@@ -48,6 +48,7 @@ class GroupedLineEdit : public QScrollArea
     signals:
         void textChanged();
         void cursorPositionChanged(int position);
+        void editingFinished();
 
     private:
         struct Private;
