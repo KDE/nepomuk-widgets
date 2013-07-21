@@ -111,6 +111,7 @@ install(FILES
   ui/tagwidget.h
   ui/filemetadatawidget.h
   ui/filemetadataconfigwidget.h
+  ui/groupedlineedit.h
   ui/querybuilder.h
   utils/resourcemodel.h
 
