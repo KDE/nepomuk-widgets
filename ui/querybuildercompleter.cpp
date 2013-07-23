@@ -212,8 +212,10 @@ void QueryBuilderCompleter::valueSelected()
 
 bool QueryBuilderCompleter::eventFilter(QObject *, QEvent *event)
 {
+    bool rs = false;
+
     if (!isVisible()) {
-        return false;       // Don't block events when the completer is not open
+        return rs;       // Don't block events when the completer is not open
     }
 
     if (event->type() == QEvent::KeyPress) {
@@ -237,10 +239,12 @@ bool QueryBuilderCompleter::eventFilter(QObject *, QEvent *event)
         case Qt::Key_Tab:
         case Qt::Key_Return:
             valueSelected();
+            rs = true;  // In Dolphin, don't trigger a search when Enter is pressed in the auto-completion box
             break;
 
         case Qt::Key_Escape:
             hide();
+            rs = true;
             break;
 
         default:
@@ -250,7 +254,7 @@ bool QueryBuilderCompleter::eventFilter(QObject *, QEvent *event)
         hide();
     }
 
-    return false;
+    return rs;
 }
 
 #include "querybuildercompleter_p.moc"
