@@ -41,7 +41,6 @@ QueryBuilderCompleter::QueryBuilderCompleter(QWidget *parent)
     setWindowFlags(Qt::Tool | Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint);
     setAttribute(Qt::WA_X11NetWmWindowTypeCombo);
     setAttribute(Qt::WA_ShowWithoutActivating);
-    setAttribute(Qt::WA_WindowPropagation);
 
     setFocusPolicy(Qt::NoFocus);
     setFocusProxy(parent);
