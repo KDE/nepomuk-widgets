@@ -175,9 +175,6 @@ void QueryBuilder::autoComplete(Query::CompletionProposal *proposal, const QStri
 
             if (placeholder_content.isEmpty()) {
                 replacement += QLatin1Char(' ');
-            } else if (placeholder_content.contains(QLatin1Char(' '))) {
-                replacement += QLatin1Char('"') + placeholder_content + QLatin1Char('"');
-                cursor_position += 2;   // Skip the quotes
             } else {
                 replacement += placeholder_content;
             }
@@ -188,13 +185,16 @@ void QueryBuilder::autoComplete(Query::CompletionProposal *proposal, const QStri
         }
     }
 
+    // setText() will cause a reparse(), that will invalidate proposal
+    cursor_position = proposal->position() +
+        (cursor_position >= 0 ? cursor_position : replacement.length());
+
+    // Auto-complete, setText() triggers a reparse
     QString t = text();
     t.replace(proposal->position(), proposal->length(), replacement);
-    setText(t);
 
-    setCursorPosition(proposal->position() +
-        (cursor_position >= 0 ? cursor_position : replacement.length()));
-    reparse();
+    setText(t);
+    setCursorPosition(cursor_position);
 }
 
 #include "querybuilder.moc"

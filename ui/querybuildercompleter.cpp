@@ -201,7 +201,7 @@ void QueryBuilderCompleter::valueSelected()
     QString placeholder_content;
 
     if (currentWidget() == page_strings) {
-        placeholder_content = page_strings->currentItem()->text();
+        placeholder_content = QLatin1Char('"') + page_strings->currentItem()->text() + QLatin1Char('"');
     } else if (currentWidget() == page_datetime) {
         placeholder_content = page_datetime->selectedDate().toString(QLatin1String("yyyy-MM-dd"));
     }

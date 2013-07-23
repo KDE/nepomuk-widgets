@@ -77,7 +77,7 @@ GroupedLineEdit::~GroupedLineEdit()
 QString GroupedLineEdit::text() const
 {
     // Remove the block crosses from the text
-    return toPlainText().remove(" ×");
+    return toPlainText();
 }
 
 int GroupedLineEdit::cursorPosition() const
@@ -101,12 +101,13 @@ void GroupedLineEdit::setCursorPosition(int position)
     QTextCursor c = textCursor();
 
     c.setPosition(position, QTextCursor::MoveAnchor);
+
+    setTextCursor(c);
 }
 
 void GroupedLineEdit::setText(const QString &text)
 {
     setPlainText(text);
-    removeAllBlocks();
 }
 
 void GroupedLineEdit::removeAllBlocks()
