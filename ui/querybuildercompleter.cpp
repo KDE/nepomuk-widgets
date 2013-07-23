@@ -29,6 +29,7 @@
 #include <QtGui/QVBoxLayout>
 #include <QtGui/QLabel>
 #include <QtGui/QKeyEvent>
+#include <QtGui/QTextDocument> // for Qt::escape
 
 QueryBuilderCompleter::QueryBuilderCompleter(QWidget *parent)
 : QStackedWidget(parent),
@@ -122,7 +123,7 @@ void QueryBuilderCompleter::addProposal(Nepomuk2::Query::CompletionProposal *pro
 
             proposal_text += QLatin1String("</em>");
         } else if (i <= proposal->lastMatchedPart()) {
-            proposal_text += QLatin1String("<strong>") + part + QLatin1String("</strong>");
+            proposal_text += QLatin1String("<strong>") + Qt::escape(part) + QLatin1String("</strong>");
         } else {
             proposal_text += part;
         }
