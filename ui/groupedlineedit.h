@@ -42,6 +42,7 @@ class GroupedLineEdit : public QPlainTextEdit
         void addBlock(int start, int end);
 
         virtual QSize sizeHint() const;
+        virtual QSize minimumSizeHint() const;
 
     signals:
         void editingFinished();

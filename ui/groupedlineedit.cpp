@@ -33,8 +33,6 @@
 #include <QtGui/QColor>
 #include <QtGui/QPalette>
 
-#include <QtDebug>
-
 using namespace Nepomuk2;
 
 struct GroupedLineEdit::Private
@@ -118,21 +116,19 @@ void GroupedLineEdit::removeAllBlocks()
 
 QSize GroupedLineEdit::sizeHint() const
 {
-    QFontMetrics fm(font());
-    QStyleOptionFrameV3 opt;
-    QString text = document()->toPlainText();
-
-    int h = qMax(fm.height(), 14) + 4;
-    int w = fm.width(text) + 4;
-
-    opt.initFrom(this);
-
-    return style()->sizeFromContents(
-        QStyle::CT_LineEdit,
-        &opt,
-        QSize(w, h).expandedTo(QApplication::globalStrut()),
-       this
+    QSize rs(
+        40,
+        document()->findBlock(0).layout()->lineAt(0).height() +
+            document()->documentMargin() * 2 +
+            frameWidth() * 2
     );
+
+    return rs;
+}
+
+QSize GroupedLineEdit::minimumSizeHint() const
+{
+    return sizeHint();
 }
 
 void GroupedLineEdit::keyPressEvent(QKeyEvent *e)
