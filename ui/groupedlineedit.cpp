@@ -171,9 +171,9 @@ void GroupedLineEdit::paintEvent(QPaintEvent *e)
         QPainterPath path;
         QRectF rectangle(
             start_x - 1.0 - double(horizontalScrollBar()->value()),
-            0.0,
+            1.0,
             end_x - start_x + 2.0,
-            double(viewport()->height() - 1)
+            double(viewport()->height() - 2)
         );
 
         unsigned char *c = colors + (color_index * 3);
