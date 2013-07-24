@@ -108,6 +108,15 @@ void GroupedLineEdit::setText(const QString &text)
     setPlainText(text);
 }
 
+void GroupedLineEdit::selectAll()
+{
+    QTextCursor c = textCursor();
+
+    c.select(QTextCursor::LineUnderCursor);
+
+    setTextCursor(c);
+}
+
 void GroupedLineEdit::removeAllBlocks()
 {
     d->blocks.clear();

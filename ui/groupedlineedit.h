@@ -37,6 +37,7 @@ class GroupedLineEdit : public QPlainTextEdit
 
         void setCursorPosition(int position);
         void setText(const QString &text);
+        void selectAll();
 
         void removeAllBlocks();
         void addBlock(int start, int end);
