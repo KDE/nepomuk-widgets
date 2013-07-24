@@ -37,6 +37,22 @@ class QueryBuilder : public GroupedLineEdit
     public:
         explicit QueryBuilder(Query::QueryParser *parser, QWidget *parent = 0);
 
+        /**
+         * @brief Parse the user query and provide syntax-highlighting and auto-completion
+         *
+         * If parsing is disabled, the query builder acts like a simple
+         * QLineEdit without any fancy coloring. If parsing is enabled, all the
+         * features are exposed to the user.
+         *
+         * By default, parsing is enabled.
+         */
+        void setParsingEnabled(bool enable);
+
+        /**
+         * @return whether parsing is enabled
+         */
+        bool parsingEnabled() const;
+
     private:
         void handleTerm(const Query::Term &term);
 

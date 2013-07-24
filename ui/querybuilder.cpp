@@ -37,6 +37,7 @@ struct QueryBuilder::Private
 {
     Query::QueryParser *parser;
     QueryBuilderCompleter *completer;
+    bool parsing_enabled;
 };
 
 QueryBuilder::QueryBuilder(Query::QueryParser *parser, QWidget *parent)
@@ -45,11 +46,22 @@ QueryBuilder::QueryBuilder(Query::QueryParser *parser, QWidget *parent)
 {
     d->parser = parser;
     d->completer = new QueryBuilderCompleter(this);
+    d->parsing_enabled = true;
 
     connect(this, SIGNAL(textChanged()),
             this, SLOT(reparse()));
     connect(d->completer, SIGNAL(proposalSelected(Nepomuk2::Query::CompletionProposal*,QString)),
             this, SLOT(autoComplete(Nepomuk2::Query::CompletionProposal*,QString)));
+}
+
+void QueryBuilder::setParsingEnabled(bool enable)
+{
+    d->parsing_enabled = enable;
+}
+
+bool QueryBuilder::parsingEnabled() const
+{
+    return d->parsing_enabled;
 }
 
 void QueryBuilder::handleTerm(const Query::Term &term)
@@ -91,6 +103,11 @@ void QueryBuilder::handleTerm(const Query::Term &term)
 
 void QueryBuilder::reparse()
 {
+    if (!parsingEnabled()) {
+        d->completer->hide();
+        return;
+    }
+
     int position = cursorPosition();
     QString t = text();
 
