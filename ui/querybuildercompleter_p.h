@@ -40,6 +40,8 @@ class QueryBuilderCompleter : public QListWidget
 
         void addProposal(Nepomuk2::Query::CompletionProposal *proposal, const QString &prefix);
 
+        virtual QSize sizeHint() const;
+
     public slots:
         void open();
 

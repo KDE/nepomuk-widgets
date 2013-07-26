@@ -43,11 +43,21 @@ QueryBuilderCompleter::QueryBuilderCompleter(Nepomuk2::Query::QueryParser *parse
 
     setFocusPolicy(Qt::NoFocus);
     setFocusProxy(parent);
+    setFrameShape(NoFrame);
 
     parent->installEventFilter(this);
 
     connect(this, SIGNAL(itemActivated(QListWidgetItem*)),
             this, SLOT(proposalActivated(QListWidgetItem*)));
+}
+
+QSize QueryBuilderCompleter::sizeHint() const
+{
+    if (count() == 0) {
+        return QSize(100, 100);
+    } else {
+        return QSize(0, qMin(400, count() * item(0)->sizeHint().height()));
+    }
 }
 
 QWidget *QueryBuilderCompleter::widgetForProposal(Nepomuk2::Query::CompletionProposal *proposal,
