@@ -45,15 +45,13 @@ QueryBuilder::QueryBuilder(Query::QueryParser *parser, QWidget *parent)
   d(new Private)
 {
     d->parser = parser;
-    d->completer = new QueryBuilderCompleter(this);
+    d->completer = new QueryBuilderCompleter(parser, this);
     d->parsing_enabled = true;
 
     connect(this, SIGNAL(textChanged()),
             this, SLOT(reparse()));
-    connect(d->completer, SIGNAL(proposalSelected(Nepomuk2::Query::CompletionProposal*)),
-            this, SLOT(proposalSelected(Nepomuk2::Query::CompletionProposal*)));
-    connect(d->completer, SIGNAL(valueSelected(QString)),
-            this, SLOT(valueSelected(QString)));
+    connect(d->completer, SIGNAL(proposalSelected(Nepomuk2::Query::CompletionProposal*,QString)),
+            this, SLOT(proposalSelected(Nepomuk2::Query::CompletionProposal*,QString)));
 }
 
 void QueryBuilder::setParsingEnabled(bool enable)
@@ -139,36 +137,11 @@ void QueryBuilder::reparse()
     // Build the list of auto-completions
     QList<Query::CompletionProposal *> proposals = d->parser->completionProposals();
 
-    if (proposals.count() == 1) {
-        // Only one proposal, the query is unambiguous, show a list of auto-completions
-        switch (proposals.at(0)->type()) {
-        case Query::CompletionProposal::Tag:
-            d->completer->setMode(QueryBuilderCompleter::Strings);
-            d->completer->setStrings(d->parser->allTags(), term_before_cursor);
-            break;
-
-        case Query::CompletionProposal::Contact:
-            d->completer->setMode(QueryBuilderCompleter::Strings);
-            d->completer->setStrings(d->parser->allContacts(), term_before_cursor);
-            break;
-
-        case Query::CompletionProposal::DateTime:
-            d->completer->setMode(QueryBuilderCompleter::DateTime);
-            break;
-
-        default:
-            d->completer->setMode(QueryBuilderCompleter::Proposals);
-            break;
-        }
-
-        d->completer->addProposal(proposals.at(0));
-        d->completer->open();
-    } else if (proposals.count() > 1) {
-        // More than one proposal, the user needs to clarify its input
-        d->completer->setMode(QueryBuilderCompleter::Proposals);
+    if (proposals.count() > 0) {
+        d->completer->clear();
 
         Q_FOREACH(Query::CompletionProposal *proposal, d->parser->completionProposals()) {
-            d->completer->addProposal(proposal);
+            d->completer->addProposal(proposal, term_before_cursor);
         }
 
         d->completer->open();
@@ -178,54 +151,58 @@ void QueryBuilder::reparse()
     }
 }
 
-void QueryBuilder::proposalSelected(Query::CompletionProposal *proposal)
+void QueryBuilder::proposalSelected(Query::CompletionProposal *proposal,
+                                    const QString &value)
 {
-    // Build the text that will be used to auto-complete the query
-    QString replacement;
-    int cursor_position = -1;
+    QString t = text();
 
-    Q_FOREACH(const QString &part, proposal->pattern()) {
+    // Term before the cursor (if any)
+    int term_before_cursor_pos = cursorPosition();
+    QString term_before_cursor;
+
+    while (term_before_cursor_pos > 0 && !t.at(term_before_cursor_pos - 1).isSpace()) {
+        term_before_cursor.prepend(t.at(term_before_cursor_pos - 1));
+        --term_before_cursor_pos;
+    }
+
+    // Build the text that will be used to auto-complete the query
+    QStringList pattern = proposal->pattern();
+    QString replacement;
+    int first_unmatched_part = proposal->lastMatchedPart() + 1;
+    int cursor_offset = -1;
+
+    if (!term_before_cursor.isEmpty()) {
+        // The last matched part will be replaced by value, so count it
+        // as unmatched to have it replaced
+        --first_unmatched_part;
+    }
+
+    for (int i=first_unmatched_part; i<pattern.count(); ++i) {
+        const QString &part = pattern.at(i);
+
         if (!replacement.isEmpty()) {
             replacement += QLatin1Char(' ');
         }
 
         if (part.at(0) == QLatin1Char('%')) {
-            cursor_position = replacement.length();
-            replacement += QLatin1Char(' ');
+            cursor_offset = replacement.length() + value.length();
+            replacement += value;
         } else {
             // FIXME: This arbitrarily selects a term even if it does not fit
-            //        what the user entered.
+            //        gramatically.
             replacement += part.section(QLatin1Char('|'), 0, 0);
         }
     }
 
     // setText() will cause a reparse(), that will invalidate proposal
-    cursor_position = proposal->position() +
-        (cursor_position >= 0 ? cursor_position : replacement.length());
+    int put_cursor_at = term_before_cursor_pos +
+        (cursor_offset >= 0 ? cursor_offset : replacement.length());
 
     // Auto-complete, setText() triggers a reparse
-    QString t = text();
-    t.replace(proposal->position(), proposal->length(), replacement);
+    t.replace(term_before_cursor_pos, term_before_cursor.length(), replacement);
 
     setText(t);
-    setCursorPosition(cursor_position);
-}
-
-void QueryBuilder::valueSelected(const QString &value)
-{
-    // Replace the text under the cursor with value
-    QString t = text();
-    int insert_position = cursorPosition();
-
-    while (insert_position > 0 && !t.at(insert_position - 1).isSpace()) {
-        --insert_position;
-    }
-
-    // Auto-complete, setText() triggers a reparse
-    t.replace(insert_position, cursorPosition() - insert_position, value);
-
-    setText(t);
-    setCursorPosition(insert_position + value.length());
+    setCursorPosition(put_cursor_at);
 }
 
 #include "querybuilder.moc"

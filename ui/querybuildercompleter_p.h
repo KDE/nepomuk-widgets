@@ -20,51 +20,47 @@
 #ifndef __QUERYBUILDERCOMPLETER_H__
 #define __QUERYBUILDERCOMPLETER_H__
 
-#include <QtGui/QStackedWidget>
+#include <QtGui/QListWidget>
 
-class QListWidget;
 class QListWidgetItem;
-class QCalendarWidget;
-class QDate;
 
-namespace Nepomuk2 { namespace Query { class CompletionProposal; }}
+namespace Nepomuk2 {
+    namespace Query {
+        class CompletionProposal;
+        class QueryParser;
+    }
+}
 
-class QueryBuilderCompleter : public QStackedWidget
+class QueryBuilderCompleter : public QListWidget
 {
     Q_OBJECT
 
     public:
-        enum Mode {
-            Proposals,
-            Strings,
-            DateTime,
-        };
+        explicit QueryBuilderCompleter(Nepomuk2::Query::QueryParser *parser, QWidget *parent);
 
-        explicit QueryBuilderCompleter(QWidget *parent);
-
-        void setMode(Mode mode);
-
-        void addProposal(Nepomuk2::Query::CompletionProposal *proposal);
-        void setStrings(const QStringList &strings, const QString &preselect_prefix);
+        void addProposal(Nepomuk2::Query::CompletionProposal *proposal, const QString &prefix);
 
     public slots:
         void open();
 
     private slots:
-        void emitProposalSelected();
-        void emitValueSelected();
+        void proposalActivated(QListWidgetItem *item);
 
     protected:
         virtual bool eventFilter(QObject *, QEvent *event);
 
     signals:
-        void proposalSelected(Nepomuk2::Query::CompletionProposal *proposal);
-        void valueSelected(const QString &value);
+        void proposalSelected(Nepomuk2::Query::CompletionProposal *proposal,
+                              const QString &value);
 
     private:
-        QListWidget *page_proposals;
-        QListWidget *page_strings;
-        QCalendarWidget *page_datetime;
+        QString valueStartingWith(const QStringList &strings,
+                                  const QString &prefix) const;
+        QWidget *widgetForProposal(Nepomuk2::Query::CompletionProposal *proposal,
+                                   const QString &value);
+
+    private:
+        Nepomuk2::Query::QueryParser *parser;
 };
 
 #endif

@@ -20,6 +20,7 @@
 #include "querybuildercompleter_p.h"
 
 #include <nepomuk2/completionproposal.h>
+#include <nepomuk2/queryparser.h>
 #include <klocalizedstring.h>
 
 #include <QtGui/QListWidget>
@@ -31,11 +32,9 @@
 #include <QtGui/QKeyEvent>
 #include <QtGui/QTextDocument> // for Qt::escape
 
-QueryBuilderCompleter::QueryBuilderCompleter(QWidget *parent)
-: QStackedWidget(parent),
-  page_proposals(new QListWidget(this)),
-  page_strings(new QListWidget(this)),
-  page_datetime(new QCalendarWidget(this))
+QueryBuilderCompleter::QueryBuilderCompleter(Nepomuk2::Query::QueryParser *parser, QWidget *parent)
+: QListWidget(parent),
+  parser(parser)
 {
     // Display the completer in its own non-decorated popup
     setWindowFlags(Qt::Tool | Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint);
@@ -45,57 +44,21 @@ QueryBuilderCompleter::QueryBuilderCompleter(QWidget *parent)
     setFocusPolicy(Qt::NoFocus);
     setFocusProxy(parent);
 
-    // Configure the pages
-    page_proposals->setFrameShape(QFrame::NoFrame);
-    page_strings->setFrameShape(QFrame::NoFrame);
-
-    page_datetime->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Ignored);
-    page_datetime->setFirstDayOfWeek(QLocale::system().firstDayOfWeek());
-
-    // Add them in the stack
-    addWidget(page_proposals);
-    addWidget(page_strings);
-    addWidget(page_datetime);
-
     parent->installEventFilter(this);
 
-    connect(page_proposals, SIGNAL(itemActivated(QListWidgetItem*)),
-            this, SLOT(emitProposalSelected()));
-    connect(page_strings, SIGNAL(itemActivated(QListWidgetItem*)),
-            this, SLOT(emitValueSelected()));
-    connect(page_datetime, SIGNAL(activated(QDate)),
-            this, SLOT(emitValueSelected()));
-    connect(page_datetime, SIGNAL(clicked(QDate)),
-            this, SLOT(emitValueSelected()));
+    connect(this, SIGNAL(itemActivated(QListWidgetItem*)),
+            this, SLOT(proposalActivated(QListWidgetItem*)));
 }
 
-void QueryBuilderCompleter::setMode(Mode mode)
-{
-    page_proposals->clear();
-
-    switch (mode) {
-    case Proposals:
-        setCurrentWidget(page_proposals);
-        break;
-
-    case Strings:
-        setCurrentWidget(page_strings);
-        page_strings->clear();
-        break;
-
-    case DateTime:
-        setCurrentWidget(page_datetime);
-        break;
-    }
-}
-
-void QueryBuilderCompleter::addProposal(Nepomuk2::Query::CompletionProposal *proposal)
+QWidget *QueryBuilderCompleter::widgetForProposal(Nepomuk2::Query::CompletionProposal *proposal,
+                                                  const QString &value)
 {
     // Create a label representing the pattern of the proposal
     QString proposal_text = QLatin1String("&nbsp; &nbsp; ");
+    QStringList pattern = proposal->pattern();
 
-    for (int i=0; i<proposal->pattern().count(); ++i) {
-        const QString &part = proposal->pattern().at(i);
+    for (int i=0; i<pattern.count(); ++i) {
+        const QString &part = pattern.at(i);
 
         if (i != 0) {
             proposal_text += QLatin1Char(' ');
@@ -104,29 +67,33 @@ void QueryBuilderCompleter::addProposal(Nepomuk2::Query::CompletionProposal *pro
         if (part.at(0) == QLatin1Char('%')) {
             proposal_text += QLatin1String("<em>");
 
-            switch (proposal->type()) {
-            case Nepomuk2::Query::CompletionProposal::NoType:
-                proposal_text += i18nc("Pattern placeholder having no specific type", "...");
-                break;
+            if (!value.isEmpty()) {
+                proposal_text += value;
+            } else {
+                switch (proposal->type()) {
+                case Nepomuk2::Query::CompletionProposal::NoType:
+                    proposal_text += i18nc("Pattern placeholder having no specific type", "[something]");
+                    break;
 
-            case Nepomuk2::Query::CompletionProposal::DateTime:
-                proposal_text += i18nc("Pattern placeholder of date-time type", "[date and time]");
-                break;
+                case Nepomuk2::Query::CompletionProposal::DateTime:
+                    proposal_text += i18nc("Pattern placeholder of date-time type", "[date and time]");
+                    break;
 
-            case Nepomuk2::Query::CompletionProposal::Tag:
-                proposal_text += i18nc("Pattern placeholder being a tag name", "[tag name]");
-                break;
+                case Nepomuk2::Query::CompletionProposal::Tag:
+                    proposal_text += i18nc("Pattern placeholder being a tag name", "[tag name]");
+                    break;
 
-            case Nepomuk2::Query::CompletionProposal::Contact:
-                proposal_text += i18nc("Pattern placeholder being a contact identifier", "[contact]");
-                break;
+                case Nepomuk2::Query::CompletionProposal::Contact:
+                    proposal_text += i18nc("Pattern placeholder being a contact identifier", "[contact]");
+                    break;
+                }
             }
 
             proposal_text += QLatin1String("</em>");
         } else if (i <= proposal->lastMatchedPart()) {
             proposal_text += QLatin1String("<strong>") + Qt::escape(part) + QLatin1String("</strong>");
         } else {
-            proposal_text += part;
+            proposal_text += Qt::escape(part);
         }
     }
 
@@ -146,40 +113,67 @@ void QueryBuilderCompleter::addProposal(Nepomuk2::Query::CompletionProposal *pro
     vlayout->addWidget(title_label);
     vlayout->addWidget(content_label);
 
-    // Add a new item to the list
-    QListWidgetItem *item = new QListWidgetItem(page_proposals);
-
-    item->setData(Qt::UserRole, QVariant::fromValue(static_cast<void *>(proposal)));
-    item->setSizeHint(widget->sizeHint());
-
-    page_proposals->addItem(item);
-    page_proposals->setItemWidget(item, widget);
-    page_proposals->setCurrentRow(0);
+    return widget;
 }
 
-void QueryBuilderCompleter::setStrings(const QStringList &strings, const QString &preselect_prefix)
+QString QueryBuilderCompleter::valueStartingWith(const QStringList &strings,
+                                                 const QString &prefix) const
 {
-    Q_FOREACH(const QString &s, strings) {
-        page_strings->addItem(s);
+    QStringList::const_iterator it = qLowerBound(strings, prefix);
+
+    if (it == strings.end() || !(*it).startsWith(prefix)) {
+        return QString();
+    } else {
+        return *it;
     }
+}
 
-    page_strings->sortItems(Qt::AscendingOrder);
+void QueryBuilderCompleter::addProposal(Nepomuk2::Query::CompletionProposal *proposal,
+                                        const QString &prefix)
+{
+    QString value;
+    QStringList pattern = proposal->pattern();
 
-    // Preselect the first prefix that is just after preselect_prefix in the
-    // alphabetic order
-    page_strings->setCurrentRow(0);
-
-    for (int i=0; i<page_strings->count(); ++i) {
-        if (page_strings->item(i)->text().toLower() > preselect_prefix.toLower()) {
-            page_strings->setCurrentRow(i);
+    // If the term the user is entering is a placeholder, pre-fill it
+    if (!prefix.isEmpty() &&
+        proposal->lastMatchedPart() < pattern.size() &&
+        pattern.at(proposal->lastMatchedPart()).at(0) == QLatin1Char('%'))
+    {
+        switch (proposal->type()) {
+        case Nepomuk2::Query::CompletionProposal::Contact:
+            value = valueStartingWith(parser->allContacts(), prefix);
+            break;
+        case Nepomuk2::Query::CompletionProposal::Tag:
+            value = valueStartingWith(parser->allTags(), prefix);
+            break;
+        case Nepomuk2::Query::CompletionProposal::DateTime:
+            value = QDate::currentDate().toString(Qt::DefaultLocaleShortDate);
+            break;
+        default:
             break;
         }
+    }
+
+    // Add a new item to the list
+    QListWidgetItem *item = new QListWidgetItem(this);
+    QWidget *widget = widgetForProposal(proposal, value);
+
+    item->setData(Qt::UserRole, QVariant::fromValue(static_cast<void *>(proposal)));
+    item->setData(Qt::UserRole + 1, value);
+    item->setSizeHint(widget->sizeHint());
+
+    addItem(item);
+    setItemWidget(item, widget);
+
+    if (count() == 1 || !value.isEmpty()) {
+        // Select the first item, or an interesting completion if possible
+        setCurrentRow(count() - 1);
     }
 }
 
 void QueryBuilderCompleter::open()
 {
-    if (page_proposals->count() == 0) {
+    if (count() == 0) {
         return;
     }
 
@@ -193,28 +187,14 @@ void QueryBuilderCompleter::open()
     show();
 }
 
-void QueryBuilderCompleter::emitProposalSelected()
+void QueryBuilderCompleter::proposalActivated(QListWidgetItem *item)
 {
     Nepomuk2::Query::CompletionProposal *proposal =
         static_cast<Nepomuk2::Query::CompletionProposal *>(
-            page_proposals->currentItem()->data(Qt::UserRole).value<void *>()
+            item->data(Qt::UserRole).value<void *>()
         );
 
-    emit proposalSelected(proposal);
-}
-
-void QueryBuilderCompleter::emitValueSelected()
-{
-    QString value;
-
-    if (currentWidget() == page_strings) {
-        value = QLatin1Char('"') + page_strings->currentItem()->text() + QLatin1Char('"');
-    } else if (currentWidget() == page_datetime) {
-        value = page_datetime->selectedDate().toString(QLatin1String("yyyy-MM-dd"));
-    }
-
-    emit valueSelected(value);
-    hide();
+    emit proposalSelected(proposal, item->data(Qt::UserRole + 1).toString());
 }
 
 bool QueryBuilderCompleter::eventFilter(QObject *, QEvent *event)
@@ -227,29 +207,24 @@ bool QueryBuilderCompleter::eventFilter(QObject *, QEvent *event)
 
     if (event->type() == QEvent::KeyPress) {
         QKeyEvent *keypress = static_cast<QKeyEvent *>(event);
-        QListWidget *list = qobject_cast<QListWidget *>(currentWidget());    // The event is never filtered when the date-time page is opened
 
         switch (keypress->key()) {
         case Qt::Key_Up:
-            if (list && list->currentRow() > 0) {
-                list->setCurrentRow(list->currentRow() - 1);
+            if (currentRow() > 0) {
+                setCurrentRow(currentRow() - 1);
             }
             break;
 
         case Qt::Key_Down:
-            if (list && list->currentRow() < list->count() - 1) {
-                list->setCurrentRow(list->currentRow() + 1);
+            if (currentRow() < count() - 1) {
+                setCurrentRow(currentRow() + 1);
             }
             break;
 
         case Qt::Key_Enter:
         case Qt::Key_Tab:
         case Qt::Key_Return:
-            if (currentWidget() == page_proposals) {
-                emitProposalSelected();
-            } else {
-                emitValueSelected();
-            }
+            proposalActivated(currentItem());
             rs = true;  // In Dolphin, don't trigger a search when Enter is pressed in the auto-completion box
             break;
 

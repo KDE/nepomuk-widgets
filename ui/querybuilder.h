@@ -58,8 +58,8 @@ class QueryBuilder : public GroupedLineEdit
 
     private slots:
         void reparse();
-        void proposalSelected(Nepomuk2::Query::CompletionProposal *proposal);
-        void valueSelected(const QString &value);
+        void proposalSelected(Nepomuk2::Query::CompletionProposal *proposal,
+                              const QString &value);
 
     private:
         struct Private;
