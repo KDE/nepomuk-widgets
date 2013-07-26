@@ -50,8 +50,10 @@ QueryBuilder::QueryBuilder(Query::QueryParser *parser, QWidget *parent)
 
     connect(this, SIGNAL(textChanged()),
             this, SLOT(reparse()));
-    connect(d->completer, SIGNAL(proposalSelected(Nepomuk2::Query::CompletionProposal*,QString)),
-            this, SLOT(autoComplete(Nepomuk2::Query::CompletionProposal*,QString)));
+    connect(d->completer, SIGNAL(proposalSelected(Nepomuk2::Query::CompletionProposal*)),
+            this, SLOT(proposalSelected(Nepomuk2::Query::CompletionProposal*)));
+    connect(d->completer, SIGNAL(valueSelected(QString)),
+            this, SLOT(valueSelected(QString)));
 }
 
 void QueryBuilder::setParsingEnabled(bool enable)
@@ -176,7 +178,7 @@ void QueryBuilder::reparse()
     }
 }
 
-void QueryBuilder::autoComplete(Query::CompletionProposal *proposal, const QString &placeholder_content)
+void QueryBuilder::proposalSelected(Query::CompletionProposal *proposal)
 {
     // Build the text that will be used to auto-complete the query
     QString replacement;
@@ -188,13 +190,8 @@ void QueryBuilder::autoComplete(Query::CompletionProposal *proposal, const QStri
         }
 
         if (part.at(0) == QLatin1Char('%')) {
-            cursor_position = replacement.length() + placeholder_content.length();
-
-            if (placeholder_content.isEmpty()) {
-                replacement += QLatin1Char(' ');
-            } else {
-                replacement += placeholder_content;
-            }
+            cursor_position = replacement.length();
+            replacement += QLatin1Char(' ');
         } else {
             // FIXME: This arbitrarily selects a term even if it does not fit
             //        what the user entered.
@@ -212,6 +209,23 @@ void QueryBuilder::autoComplete(Query::CompletionProposal *proposal, const QStri
 
     setText(t);
     setCursorPosition(cursor_position);
+}
+
+void QueryBuilder::valueSelected(const QString &value)
+{
+    // Replace the text under the cursor with value
+    QString t = text();
+    int insert_position = cursorPosition();
+
+    while (insert_position > 0 && !t.at(insert_position - 1).isSpace()) {
+        --insert_position;
+    }
+
+    // Auto-complete, setText() triggers a reparse
+    t.replace(insert_position, cursorPosition() - insert_position, value);
+
+    setText(t);
+    setCursorPosition(insert_position + value.length());
 }
 
 #include "querybuilder.moc"

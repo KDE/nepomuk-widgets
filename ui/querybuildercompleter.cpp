@@ -60,11 +60,13 @@ QueryBuilderCompleter::QueryBuilderCompleter(QWidget *parent)
     parent->installEventFilter(this);
 
     connect(page_proposals, SIGNAL(itemActivated(QListWidgetItem*)),
-            this, SLOT(valueSelected()));
+            this, SLOT(emitProposalSelected()));
     connect(page_strings, SIGNAL(itemActivated(QListWidgetItem*)),
-            this, SLOT(valueSelected()));
+            this, SLOT(emitValueSelected()));
     connect(page_datetime, SIGNAL(activated(QDate)),
-            this, SLOT(valueSelected()));
+            this, SLOT(emitValueSelected()));
+    connect(page_datetime, SIGNAL(clicked(QDate)),
+            this, SLOT(emitValueSelected()));
 }
 
 void QueryBuilderCompleter::setMode(Mode mode)
@@ -191,22 +193,27 @@ void QueryBuilderCompleter::open()
     show();
 }
 
-void QueryBuilderCompleter::valueSelected()
+void QueryBuilderCompleter::emitProposalSelected()
 {
     Nepomuk2::Query::CompletionProposal *proposal =
         static_cast<Nepomuk2::Query::CompletionProposal *>(
             page_proposals->currentItem()->data(Qt::UserRole).value<void *>()
         );
 
-    QString placeholder_content;
+    emit proposalSelected(proposal);
+}
+
+void QueryBuilderCompleter::emitValueSelected()
+{
+    QString value;
 
     if (currentWidget() == page_strings) {
-        placeholder_content = QLatin1Char('"') + page_strings->currentItem()->text() + QLatin1Char('"');
+        value = QLatin1Char('"') + page_strings->currentItem()->text() + QLatin1Char('"');
     } else if (currentWidget() == page_datetime) {
-        placeholder_content = page_datetime->selectedDate().toString(QLatin1String("yyyy-MM-dd"));
+        value = page_datetime->selectedDate().toString(QLatin1String("yyyy-MM-dd"));
     }
 
-    emit proposalSelected(proposal, placeholder_content);
+    emit valueSelected(value);
     hide();
 }
 
@@ -238,7 +245,11 @@ bool QueryBuilderCompleter::eventFilter(QObject *, QEvent *event)
         case Qt::Key_Enter:
         case Qt::Key_Tab:
         case Qt::Key_Return:
-            valueSelected();
+            if (currentWidget() == page_proposals) {
+                emitProposalSelected();
+            } else {
+                emitValueSelected();
+            }
             rs = true;  // In Dolphin, don't trigger a search when Enter is pressed in the auto-completion box
             break;
 
@@ -250,8 +261,6 @@ bool QueryBuilderCompleter::eventFilter(QObject *, QEvent *event)
         default:
             break;
         }
-    } else if (event->type() == QEvent::FocusOut) {
-        hide();
     }
 
     return rs;

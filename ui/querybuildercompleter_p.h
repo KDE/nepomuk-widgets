@@ -51,14 +51,15 @@ class QueryBuilderCompleter : public QStackedWidget
         void open();
 
     private slots:
-        void valueSelected();
+        void emitProposalSelected();
+        void emitValueSelected();
 
     protected:
         virtual bool eventFilter(QObject *, QEvent *event);
 
     signals:
-        void proposalSelected(Nepomuk2::Query::CompletionProposal *proposal,
-                              const QString &placeholder_content);
+        void proposalSelected(Nepomuk2::Query::CompletionProposal *proposal);
+        void valueSelected(const QString &value);
 
     private:
         QListWidget *page_proposals;
