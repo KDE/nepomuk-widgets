@@ -44,20 +44,12 @@ QueryBuilderCompleter::QueryBuilderCompleter(Nepomuk2::Query::QueryParser *parse
     setFocusPolicy(Qt::NoFocus);
     setFocusProxy(parent);
     setFrameShape(NoFrame);
+    setUniformItemSizes(true);
 
     parent->installEventFilter(this);
 
     connect(this, SIGNAL(itemActivated(QListWidgetItem*)),
             this, SLOT(proposalActivated(QListWidgetItem*)));
-}
-
-QSize QueryBuilderCompleter::sizeHint() const
-{
-    if (count() == 0) {
-        return QSize(100, 100);
-    } else {
-        return QSize(0, qMin(400, count() * item(0)->sizeHint().height()));
-    }
 }
 
 QWidget *QueryBuilderCompleter::widgetForProposal(Nepomuk2::Query::CompletionProposal *proposal,
@@ -191,7 +183,7 @@ void QueryBuilderCompleter::open()
     QPoint parent_position = p->mapToGlobal(QPoint(0, 0));
 
     // Display the popup just below the parent widget
-    resize(p->width(), sizeHint().height());
+    resize(p->width(), count() * item(0)->sizeHint().height());
     move(parent_position.x(), parent_position.y() + p->height());
 
     show();
