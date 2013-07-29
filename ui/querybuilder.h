@@ -20,6 +20,7 @@
 #ifndef __QUERYEDITOR_H__
 #define __QUERYEDITOR_H__
 
+#include "nepomukwidgets_export.h"
 #include "groupedlineedit.h"
 
 namespace Nepomuk2 {
@@ -30,7 +31,7 @@ namespace Query {
     class Term;
 }
 
-class QueryBuilder : public GroupedLineEdit
+class NEPOMUKWIDGETS_EXPORT QueryBuilder : public GroupedLineEdit
 {
     Q_OBJECT
 

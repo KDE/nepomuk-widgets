@@ -22,6 +22,8 @@
 
 #include <QtGui/QPlainTextEdit>
 
+#include "nepomukwidgets_export.h"
+
 namespace Nepomuk2 {
 
 /**
@@ -38,7 +40,7 @@ namespace Nepomuk2 {
  * query, but a mail client can also use the control to highlight e-mail
  * addresses.
  */
-class GroupedLineEdit : public QPlainTextEdit
+class NEPOMUKWIDGETS_EXPORT GroupedLineEdit : public QPlainTextEdit
 {
     Q_OBJECT
 
