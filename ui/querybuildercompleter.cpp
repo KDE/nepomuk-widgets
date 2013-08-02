@@ -82,12 +82,15 @@ QWidget *QueryBuilderCompleter::widgetForProposal(Nepomuk2::Query::CompletionPro
                     break;
 
                 case Nepomuk2::Query::CompletionProposal::Tag:
-                    proposal_text += i18nc("Pattern placeholder being a tag name", "[tag name]");
+                    proposal_text += i18nc("Pattern placeholder for a tag name", "[tag name]");
                     break;
 
                 case Nepomuk2::Query::CompletionProposal::Contact:
-                    proposal_text += i18nc("Pattern placeholder being a contact identifier", "[contact]");
+                    proposal_text += i18nc("Pattern placeholder for a contact identifier", "[contact]");
                     break;
+
+                case Nepomuk2::Query::CompletionProposal::Email:
+                    proposal_text += i18nc("Pattern placeholder for an e-mail address", "[email address]");
                 }
             }
 
@@ -147,6 +150,9 @@ void QueryBuilderCompleter::addProposal(Nepomuk2::Query::CompletionProposal *pro
             break;
         case Nepomuk2::Query::CompletionProposal::Tag:
             value = valueStartingWith(parser->allTags(), prefix);
+            break;
+        case Nepomuk2::Query::CompletionProposal::Email:
+            value = valueStartingWith(parser->allEmailAddresses(), prefix);
             break;
         case Nepomuk2::Query::CompletionProposal::DateTime:
             value = QDate::currentDate().toString(Qt::DefaultLocaleShortDate);
