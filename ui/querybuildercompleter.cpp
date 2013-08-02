@@ -129,7 +129,7 @@ QString QueryBuilderCompleter::valueStartingWith(const QStringList &strings,
     if (it == strings.end() || !(*it).startsWith(prefix)) {
         return QString();
     } else {
-        return *it;
+        return QLatin1Char('"') + *it + QLatin1Char('"');
     }
 }
 
