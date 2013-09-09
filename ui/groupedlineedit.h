@@ -80,6 +80,11 @@ class NEPOMUKWIDGETS_EXPORT GroupedLineEdit : public QPlainTextEdit
         void setText(const QString &text);
 
         /**
+         * Clear the text and the blocks contained in the widget.
+         */
+        void clear();
+
+        /**
          * Select all the text present in the control.
          */
         void selectAll();
