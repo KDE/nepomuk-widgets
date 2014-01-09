@@ -47,6 +47,8 @@
 #include "filemetadataprovider_p.h"
 #include <KDebug>
 
+static const KCatalogLoader loader("nepomukwidgets");
+
 namespace Nepomuk2 {
 
 class FileMetaDataWidget::Private
